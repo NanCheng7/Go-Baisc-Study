@@ -1804,7 +1804,7 @@ make(map[keytype]valuetype)
 map 可以根据新增的 key-value 动态的伸缩，因此它不存在固定长度或者最大限制，但是也可以选择标明 map 的初始容量 capacity，格式如下：
 
 ```go
-make(map[keytype]valuetype, cap)0
+make(map[keytype]valuetype, cap)
 ```
 
 例如：
