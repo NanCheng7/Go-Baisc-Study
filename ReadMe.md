@@ -6941,3 +6941,144 @@ func del(slice []string,user string) []string {
 
 ## 12-数据操作
 
+### 1.Go操作Mysql
+
+#### 1.1 表准备
+
+````sql
+CREATE TABLE `user` (
+    `user_id` int(11) NOT NULL AUTO_INCREMENT,
+    `username` varchar(255) DEFAULT NULL,
+    `sex` varchar(255) DEFAULT NULL,
+    `email` varchar(255) DEFAULT NULL,
+    PRIMARY KEY (`user_id`)
+  ) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8;
+````
+
+> Mysql的前置知识
+
+#### 1.2 insert操作
+
+> 首先，我们需要引入mysql驱动
+>
+> ````go
+> _ "github.com/go-sql-driver/mysql"
+> ````
+
+> 12.1.2	
+
+````go
+package main
+
+import (
+	"database/sql"
+	"fmt"
+	_ "github.com/go-sql-driver/mysql"
+	"log"
+	"time"
+)
+
+var DB *sql.DB
+
+func init() {
+	db, err := sql.Open("mysql", "root:123456@tcp(127.0.0.1:3306)/go_study")
+	if err != nil {
+		panic(err)
+	}
+	//最大空闲连接数，默认不配置 => 最大两个连接数
+	db.SetMaxIdleConns(5)
+	//最大连接数，默认不配置 => 不限制最大连接数
+	db.SetMaxOpenConns(100)
+	//连接最大存活时间
+	db.SetConnMaxLifetime(time.Minute * 3)
+	// 空闲连接最大存活时间
+	db.SetConnMaxIdleTime(time.Minute * 1)
+
+	err = db.Ping()
+	if err != nil {
+		log.Println("数据库连接失败")
+		db.Close()
+		panic(err)
+	}
+	DB = db
+}
+
+func insert() {
+	r, err := DB.Exec("insert into user(username,sex,email) values(?,?,?)", "NanCheng", "男", "3344567")
+	if err != nil {
+		log.Println("执行Sql语句失败")
+		panic(err)
+	}
+	id, err := r.LastInsertId()
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println("插入成功", id)
+}
+
+func main() {
+	defer DB.Close()
+	insert()
+}
+
+````
+
+#### 1.3 Select 操作
+
+```go
+func _select(id int) (*User, error) {
+   rows, err := DB.Query("select * from user where user_id = ?", id)
+   if err != nil {
+      log.Println("查询数据库出现错误:", err)
+      return nil, errors.New(err.Error())
+   }
+   user := new(User)
+   for rows.Next() {
+      if err := rows.Scan(&user.UserId, &user.Username, &user.Sex, &user.Email); err != nil {
+         log.Println("扫描数据出现错误:", err)
+         return nil, errors.New(err.Error())
+      }
+   }
+   return user, nil
+}
+```
+
+#### 1.4 Update操作
+
+```go
+func _update(username string, id int) {
+   ret, err := DB.Exec("update user set username=? where user_id=?", username, id)
+   if err != nil {
+      log.Println("更新出现问题:", err)
+      return
+   }
+   affected, _ := ret.RowsAffected()
+   fmt.Println("更新成功的行数:", affected)
+}
+```
+
+#### 1.5 delete 操作
+
+```go
+func _delete(id int) {
+   ret, err := DB.Exec("delete from user where user_id=?", id)
+   if err != nil {
+      log.Println("删除出现问题:", err)
+      return
+   }
+   affected, _ := ret.RowsAffected()
+   fmt.Println("删除成功的行数:", affected)
+}
+```
+
+#### 1.6 事务
+
+mysql事务特性：
+
+1. 原子性
+2. 一致性
+3. 隔离性
+4. 持久性
+
+
+
